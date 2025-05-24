@@ -1,5 +1,74 @@
 # compet-predicao-ia
 Desenvolver um sistema de predição com base em técnicas de Aprendizado de Máquina, simulando uma aplicação prática de IA. O projeto será dividido em dois níveis (o aluno cumprindo o nível I já é suficiente para ser avaliado).
+# Como usar?
+
+### 1: Criar um Ambiente Virtual (venv)
+
+Para isolar as dependências do projeto, crie um ambiente virtual:
+
+1. **Criar o ambiente virtual**:
+
+   * **Windows**:
+
+   ```bash
+   python -m venv venv
+   ```
+
+   * **Linux/MacOS**:
+
+   ```bash
+   python3 -m venv venv
+   ```
+
+2. **Ativar o ambiente virtual**:
+
+   * **Windows**:
+
+   ```bash
+   .\venv\Scripts\activate
+   ```
+
+   * **Linux/MacOS**:
+
+   ```bash
+   source venv/bin/activate
+   ```
+
+###  2: Instalar as Dependências
+
+Com o ambiente virtual ativado, instale as dependências do projeto a partir do `requirements.txt`. Execute:
+
+```bash
+pip install -r requirements.txt
+```
+
+Isso irá instalar todas as bibliotecas necessárias, como `pandas`, `numpy`, `scikit-learn`, etc.
+
+### 3: Executar o `app.py`
+
+Agora, com as dependências instaladas, você pode executar o arquivo `app.py` para rodar o sistema. Dependendo de como o arquivo está configurado, você pode simplesmente executar o seguinte comando no terminal:
+
+```bash
+python app.py
+```
+
+Ou, caso esteja usando Python 3, o comando seria:
+
+```bash
+python3 app.py
+```
+
+O Gradio deve abrir uma interface local (geralmente em um navegador) com a aplicação rodando.
+
+### 4: Desativar o Ambiente Virtual
+
+Quando terminar de usar o ambiente virtual, você pode desativá-lo com o comando:
+
+```bash
+deactivate
+```
+
+---
 
 # Documentação Técnica do Sistema de Predição de Doenças Cardíacas
 
