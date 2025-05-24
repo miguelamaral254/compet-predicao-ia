@@ -1,114 +1,114 @@
-# modelo.py
+# modelo.py (atualizado)
 import pickle
 import numpy as np
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import (accuracy_score, classification_report, 
+                            confusion_matrix, roc_auc_score)
+from sklearn.ensemble import RandomForestClassifier
 import json
 import os
 import unicodedata
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-# Função para remover acentos e caracteres especiais
 def remover_acentos(texto):
     nfkd_form = unicodedata.normalize('NFKD', texto)
     return ''.join([c for c in nfkd_form if not unicodedata.combining(c)])
 
 def treinar_modelo(X, y):
-    log_accuracies = []
-    tree_accuracies = []
+    # Configurações
+    n_execucoes = 30
+    modelos = {
+        'Regressao Logistica': LogisticRegression(max_iter=1000),
+        'Arvore de Decisao': DecisionTreeClassifier(),
+        'Random Forest': RandomForestClassifier()
+    }
     
-    # Para armazenar o relatório de classificação para cada modelo
-    log_classification_reports = []
-    tree_classification_reports = []
-
-    for seed in range(30):
-        # Divisão dos dados em treino e teste
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=seed)
-
-        # Normalização dos dados
+    resultados = {nome: {'acuracia': [], 'roc_auc': [], 'matrizes': []} 
+                 for nome in modelos}
+    
+    for seed in range(n_execucoes):
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=seed)
+        
         scaler = StandardScaler()
         X_train_scaled = scaler.fit_transform(X_train)
         X_test_scaled = scaler.transform(X_test)
-
-        # Treinamento dos modelos
-        log_model = LogisticRegression(max_iter=1000)
-        log_model.fit(X_train_scaled, y_train)
-        log_preds = log_model.predict(X_test_scaled)
-        log_acc = accuracy_score(y_test, log_preds)
-        log_accuracies.append(log_acc)
-        log_classification_reports.append(classification_report(y_test, log_preds, output_dict=True))
-
-        tree_model = DecisionTreeClassifier()
-        tree_model.fit(X_train_scaled, y_train)
-        tree_preds = tree_model.predict(X_test_scaled)
-        tree_acc = accuracy_score(y_test, tree_preds)
-        tree_accuracies.append(tree_acc)
-        tree_classification_reports.append(classification_report(y_test, tree_preds, output_dict=True))
-
-    # Cálculo de média e desvio padrão das acurácias
-    log_mean = np.mean(log_accuracies)
-    log_std = np.std(log_accuracies)
-    tree_mean = np.mean(tree_accuracies)
-    tree_std = np.std(tree_accuracies)
-
-    # Seleção do melhor modelo com base na média de acurácia
-    if log_mean > tree_mean:
-        modelo_bolado = LogisticRegression(max_iter=1000)
-        model_name = "Regressao Logistica"
-        classification_report_data = log_classification_reports
-    else:
-        modelo_bolado = DecisionTreeClassifier()
-        model_name = "Arvore de Decisao"
-        classification_report_data = tree_classification_reports
-
-    # Treinamento do melhor modelo com todos os dados
+        
+        for nome, modelo in modelos.items():
+            # Treinamento e predição
+            modelo.fit(X_train_scaled, y_train)
+            preds = modelo.predict(X_test_scaled)
+            probas = modelo.predict_proba(X_test_scaled)[:, 1]
+            
+            # Armazenar métricas
+            resultados[nome]['acuracia'].append(
+                accuracy_score(y_test, preds))
+            resultados[nome]['roc_auc'].append(
+                roc_auc_score(y_test, probas))
+            resultados[nome]['matrizes'].append(
+                confusion_matrix(y_test, preds))
+    
+    # Análise dos resultados
+    analise = {}
+    for nome in modelos:
+        # Métricas agregadas
+        analise[nome] = {
+            'acuracia_media': np.mean(resultados[nome]['acuracia']),
+            'acuracia_desvio': np.std(resultados[nome]['acuracia']),
+            'roc_auc_medio': np.mean(resultados[nome]['roc_auc']),
+            'roc_auc_desvio': np.std(resultados[nome]['roc_auc']),
+            'matriz_confusao_media': np.mean(
+                resultados[nome]['matrizes'], axis=0).tolist()
+        }
+    
+    # Seleção do melhor modelo
+    melhor_modelo_nome = max(modelos.keys(), 
+        key=lambda x: analise[x]['acuracia_media'])
+    melhor_modelo = modelos[melhor_modelo_nome]
+    
+    # Treinar o melhor modelo com todos os dados
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
-    modelo_bolado.fit(X_scaled, y)
-
-    # Salvamento do modelo e do scaler
+    melhor_modelo.fit(X_scaled, y)
+    
+    # Salvar modelo e scaler
     with open('modelo_bolado.pkl', 'wb') as f:
-        pickle.dump(modelo_bolado, f)
-
+        pickle.dump(melhor_modelo, f)
     with open('scaler.pkl', 'wb') as f:
         pickle.dump(scaler, f)
-
-    # Garantir que a pasta 'resultados' existe
+    
+    # Salvar matriz de confusão como imagem
+    matriz_media = np.array(analise[melhor_modelo_nome]['matriz_confusao_media'])
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(matriz_media, annot=True, fmt='.2f', cmap='Blues',
+                xticklabels=['Não Doente', 'Doente'],
+                yticklabels=['Não Doente', 'Doente'])
+    plt.title('Matriz de Confusão Média')
+    plt.ylabel('Verdadeiro')
+    plt.xlabel('Predito')
+    matriz_path = 'resultados/matriz_confusao.png'
+    plt.savefig(matriz_path)
+    plt.close()
+    analise['matriz_confusao_path'] = matriz_path
+    
+    # Salvar análise completa
     if not os.path.exists('resultados'):
         os.makedirs('resultados')
-
-    # Salvar a análise das acurácias e do relatório de classificação em JSON
-    analise = {
-        "modelo": remover_acentos(model_name),
-        "acuracia_media_regressao_logistica": log_mean,
-        "acuracia_desvio_regressao_logistica": log_std,
-        "acuracia_media_arvore_decisao": tree_mean,
-        "acuracia_desvio_arvore_decisao": tree_std,
-        "relatorio_classificacao": classification_report_data
-    }
-
-    # Definir o caminho completo do arquivo JSON
-    caminho_json = 'resultados/analise_modelo_completo.json'
-
-    # Salvando as métricas e o relatório de classificação no arquivo JSON
-    with open(caminho_json, 'w', encoding='utf-8') as json_file:
-        json.dump(analise, json_file, ensure_ascii=False, indent=4)
-
-    # Exibir as métricas no console em formato percentual
-    print(f"\nMétricas de Acurácia dos Modelos (em %):\n")
-    print(f"Regressão Logística - Média: {log_mean * 100:.2f}%, Desvio Padrão: {log_std * 100:.2f}%")
-    print(f"Árvore de Decisão - Média: {tree_mean * 100:.2f}%, Desvio Padrão: {tree_std * 100:.2f}%")
-
-    # Exibir o relatório de classificação para ambos os modelos
-    print(f"\nRelatório de Classificação - {model_name} (em %):\n")
-    for class_label in ['0', '1']:
-        print(f"{class_label} - Precision: {classification_report_data[0][class_label]['precision'] * 100:.2f}%, "
-              f"Recall: {classification_report_data[0][class_label]['recall'] * 100:.2f}%, "
-              f"F1-Score: {classification_report_data[0][class_label]['f1-score'] * 100:.2f}%")
-
-    # Informar o caminho do arquivo JSON
-    print(f"\nAnálise salva em: {caminho_json}\n")
-
-    return model_name
+    
+    with open('resultados/analise_completa.json', 'w', encoding='utf-8') as f:
+        json.dump(analise, f, ensure_ascii=False, indent=4)
+    
+    # Exibir resultados
+    print("\n=== RESULTADOS DOS MODELOS ===")
+    for nome in modelos:
+        print(f"\n{nome}:")
+        print(f"Acurácia: {analise[nome]['acuracia_media']:.2%} ± {analise[nome]['acuracia_desvio']:.2%}")
+        print(f"ROC AUC: {analise[nome]['roc_auc_medio']:.2%} ± {analise[nome]['roc_auc_desvio']:.2%}")
+    
+    print(f"\nMelhor modelo: {melhor_modelo_nome}")
+    
+    return melhor_modelo_nome

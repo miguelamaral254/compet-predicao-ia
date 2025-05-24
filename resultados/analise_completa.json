@@ -1,0 +1,51 @@
+{
+    "Regressao Logistica": {
+        "acuracia_media": 0.8433333333333336,
+        "acuracia_desvio": 0.04380089632094893,
+        "roc_auc_medio": 0.9048417622214221,
+        "roc_auc_desvio": 0.03206982180454978,
+        "matriz_confusao_media": [
+            [
+                28.1,
+                3.8333333333333335
+            ],
+            [
+                5.566666666666666,
+                22.5
+            ]
+        ]
+    },
+    "Arvore de Decisao": {
+        "acuracia_media": 0.7333333333333335,
+        "acuracia_desvio": 0.059160797830996176,
+        "roc_auc_medio": 0.732325381039096,
+        "roc_auc_desvio": 0.060887960596636245,
+        "matriz_confusao_media": [
+            [
+                23.666666666666668,
+                8.266666666666667
+            ],
+            [
+                7.733333333333333,
+                20.333333333333332
+            ]
+        ]
+    },
+    "Random Forest": {
+        "acuracia_media": 0.8255555555555554,
+        "acuracia_desvio": 0.03619221661089405,
+        "roc_auc_medio": 0.9053538421420568,
+        "roc_auc_desvio": 0.03272761093687541,
+        "matriz_confusao_media": [
+            [
+                27.5,
+                4.433333333333334
+            ],
+            [
+                6.033333333333333,
+                22.033333333333335
+            ]
+        ]
+    },
+    "matriz_confusao_path": "resultados/matriz_confusao.png"
+}

@@ -1,5 +1,6 @@
-pandas==2.2.3
-numpy==2.2.4
-matplotlib==3.6.2
-seaborn==0.13.2
-gradio==5.30.0
+pandas
+numpy
+matplotlib
+seaborn
+scikit-learn
+gradio

@@ -1,4 +1,4 @@
-# preprocessamento.py
+# preprocessamento.py (atualizado)
 import pandas as pd
 import numpy as np
 import seaborn as sns
@@ -7,7 +7,6 @@ import os
 from datetime import datetime
 import json
 
-# Função para carregar os dados
 def carregar_dados():
     url = "https://archive.ics.uci.edu/ml/machine-learning-databases/heart-disease/processed.cleveland.data"
     column_names = [
@@ -17,7 +16,6 @@ def carregar_dados():
     df = pd.read_csv(url, names=column_names)
     return df
 
-# Função para pré-processar os dados
 def preprocessar_dados(df):
     # Substituir '?' por NaN e converter colunas para numérico
     df.replace('?', np.nan, inplace=True)
@@ -26,41 +24,54 @@ def preprocessar_dados(df):
     # Remover linhas com valores ausentes
     df.dropna(inplace=True)
 
-    # Converter a variável alvo em binária (1 = doença cardíaca, 0 = não)
+    # Converter a variável alvo em binária
     df['target'] = df['target'].apply(lambda x: 1 if x > 0 else 0)
 
-    # Separar features (X) e alvo (y)
+    # Separar features e alvo
     X = df.drop('target', axis=1)
     y = df['target']
     
-    return X, y
+    return X, y, df
 
-def salvar_grafico_idade(df):
-    # Garantir que a pasta 'resultados' existe
-    if not os.path.exists('resultados'):
-        os.makedirs('resultados')
-
-    print("Gerando gráfico...") 
-
-    # Gerar o gráfico da distribuição da idade
-    sns.histplot(df['age'], kde=True)
-    plt.title('Distribuição da Idade')
-
-    # Criar um nome único para o arquivo, usando a data e hora
-    nome_arquivo = f"distribuicao_idade_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
-    caminho_completo = f'resultados/{nome_arquivo}'
+def gerar_visualizacoes(df):
+    """Gera e salva múltiplas visualizações dos dados"""
+    if not os.path.exists('resultados/visualizacoes'):
+        os.makedirs('resultados/visualizacoes')
     
-    # Salva o gráfico na pasta 'resultados'
-    plt.savefig(caminho_completo)  
-    print(f"Gráfico salvo em: {caminho_completo}") 
-
-    plt.close()  
-
-    # Salvar a análise do gráfico de idade em JSON
-    analise = {
-        "grafico": nome_arquivo,
-        "descricao": "Distribuicao da Idade dos Pacientes"
-    }
-
-    with open('resultados/analise_distribuicao_idade.json', 'w') as json_file:
-        json.dump(analise, json_file)
+    analises = {}
+    
+    # 1. Distribuição da idade por doença cardíaca
+    plt.figure(figsize=(10, 6))
+    sns.boxplot(x='target', y='age', data=df)
+    plt.title('Distribuição da Idade por Presença de Doença Cardíaca')
+    plt.xlabel('Doença Cardíaca (0=Não, 1=Sim)')
+    plt.ylabel('Idade')
+    idade_path = 'resultados/visualizacoes/idade_target.png'
+    plt.savefig(idade_path)
+    plt.close()
+    analises['idade_target'] = idade_path
+    
+    # 2. Correlação entre variáveis
+    plt.figure(figsize=(12, 8))
+    sns.heatmap(df.corr(), annot=True, fmt=".2f", cmap='coolwarm')
+    plt.title('Matriz de Correlação')
+    corr_path = 'resultados/visualizacoes/matriz_correlacao.png'
+    plt.savefig(corr_path)
+    plt.close()
+    analises['correlacao'] = corr_path
+    
+    # 3. Distribuição das principais variáveis
+    fig, axes = plt.subplots(2, 2, figsize=(15, 10))
+    sns.histplot(df['trestbps'], kde=True, ax=axes[0, 0])
+    sns.histplot(df['chol'], kde=True, ax=axes[0, 1])
+    sns.histplot(df['thalach'], kde=True, ax=axes[1, 0])
+    sns.countplot(x='sex', hue='target', data=df, ax=axes[1, 1])
+    plt.tight_layout()
+    dist_path = 'resultados/visualizacoes/distribuicoes.png'
+    plt.savefig(dist_path)
+    plt.close()
+    analises['distribuicoes'] = dist_path
+    
+    # Salvar metadados das análises
+    with open('resultados/analise_visualizacoes.json', 'w') as f:
+        json.dump(analises, f, indent=4)

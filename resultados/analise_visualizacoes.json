@@ -1,0 +1,5 @@
+{
+    "idade_target": "resultados/visualizacoes/idade_target.png",
+    "correlacao": "resultados/visualizacoes/matriz_correlacao.png",
+    "distribuicoes": "resultados/visualizacoes/distribuicoes.png"
+}
